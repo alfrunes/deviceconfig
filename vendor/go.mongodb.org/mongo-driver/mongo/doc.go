@@ -9,14 +9,12 @@
 // Package mongo provides a MongoDB Driver API for Go.
 //
 // Basic usage of the driver starts with creating a Client from a connection
-// string. To do so, call the NewClient and Connect functions:
+// string. To do so, call Connect:
 //
-// 		client, err := NewClient(options.Client().ApplyURI("mongodb://foo:bar@localhost:27017"))
-// 		if err != nil { return err }
-// 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-// 		defer cancel()
-// 		err = client.Connect(ctx)
-// 		if err != nil { return err }
+//    ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+//    defer cancel()
+//    client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://foo:bar@localhost:27017"))
+//    if err != nil { return err }
 //
 // This will create a new client and start monitoring the MongoDB server on localhost.
 // The Database and Collection types can be used to access the database:
@@ -52,6 +50,17 @@
 //      return err
 //    }
 //
+// Cursor.All will decode all of the returned elements at once:
+//
+//    var results []struct{
+//      Foo string
+//      Bar int32
+//    }
+//    if err = cur.All(context.Background(), &results); err != nil {
+//      log.Fatal(err)
+//    }
+//    // do something with results...
+//
 // Methods that only return a single document will return a *SingleResult, which works
 // like a *sql.Row:
 //
@@ -70,6 +79,18 @@
 // Additional examples can be found under the examples directory in the driver's repository and
 // on the MongoDB website.
 //
+// Error Handling
+//
+// Errors from the MongoDB server will implement the ServerError interface, which has functions to check for specific
+// error codes, labels, and message substrings. These can be used to check for and handle specific errors. Some methods,
+// like InsertMany and BulkWrite, can return an error representing multiple errors, and in those cases the ServerError
+// functions will return true if any of the contained errors satisfy the check.
+//
+// There are also helper functions to check for certain specific types of errors:
+//    IsDuplicateKeyError(error)
+//    IsNetworkError(error)
+//    IsTimeout(error)
+//
 // Potential DNS Issues
 //
 // Building with Go 1.11+ and using connection strings with the "mongodb+srv"[1] scheme is
@@ -84,8 +105,22 @@
 //
 // Note: Auto encryption is an enterprise-only feature.
 //
-// The libmongocrypt C library is required when using client-side encryption. To install libmongocrypt, follow the
-// instructions for your operating system:
+// The libmongocrypt C library is required when using client-side encryption. Specific versions of libmongocrypt
+// are required for different versions of the Go Driver:
+//
+// - Go Driver v1.2.0 requires libmongocrypt v1.0.0 or higher
+//
+// - Go Driver v1.5.0 requires libmongocrypt v1.1.0 or higher
+//
+// - Go Driver v1.8.0 requires libmongocrypt v1.3.0 or higher
+//
+// - Go Driver v1.10.0 requires libmongocrypt v1.5.0 or higher.
+// There is a severe bug when calling RewrapManyDataKey with libmongocrypt versions less than 1.5.2.
+// This bug may result in data corruption.
+// Please use libmongocrypt 1.5.2 or higher when calling RewrapManyDataKey.
+//
+// To install libmongocrypt, follow the instructions for your
+// operating system:
 //
 // 1. Linux: follow the instructions listed at
 // https://github.com/mongodb/libmongocrypt#installing-libmongocrypt-from-distribution-packages to install the correct
@@ -95,6 +130,7 @@
 // to install packages via brew and compile the libmongocrypt source code.
 //
 // 3. Windows:
+//
 //    mkdir -p c:/libmongocrypt/bin
 //    mkdir -p c:/libmongocrypt/include
 //
@@ -106,18 +142,8 @@
 //    cp ./include/mongocrypt/*.h c:/libmongocrypt/include
 //    export PATH=$PATH:/cygdrive/c/libmongocrypt/bin
 //
-// libmongocrypt communicates with the mongocryptd process for automatic encryption. This process can be started manually
-// or auto-spawned by the driver itself. To enable auto-spawning, ensure the process binary is on the PATH. To start it
-// manually, use AutoEncryptionOptions:
+// libmongocrypt communicates with the mongocryptd process or mongo_crypt shared library for automatic encryption.
+// See AutoEncryptionOpts.SetExtraOptions for options to configure use of mongocryptd or mongo_crypt.
 //
-//    aeo := options.AutoEncryption()
-//    mongocryptdOpts := map[string]interface{}{
-//        "mongocryptdBypassSpawn": true,
-//    }
-//    aeo.SetExtraOptions(mongocryptdOpts)
-// To specify a process URI for mongocryptd, the "mongocryptdURI" option can be passed in the ExtraOptions map as well.
-// See the ClientSideEncryption and ClientSideEncryptionCreateKey examples below for code samples about using this
-// feature.
-//
-// [1] See https://docs.mongodb.com/manual/reference/connection-string/#dns-seedlist-connection-format
+// [1] See https://www.mongodb.com/docs/manual/reference/connection-string/#dns-seedlist-connection-format
 package mongo
