@@ -11,9 +11,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.7.0
 	github.com/urfave/cli v1.22.5
-	go.mongodb.org/mongo-driver v1.4.6
-	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59 // indirect
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777
-	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4
+	go.mongodb.org/mongo-driver v1.11.1
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1
 	google.golang.org/protobuf v1.25.0 // indirect
 )
